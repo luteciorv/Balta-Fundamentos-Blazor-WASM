@@ -57,8 +57,22 @@ else
     </div>
 
     <div class="mb-3">
-        <button class="btn btn-outline-primary" @onclick="UpsertAsync">Salvar</button>
-        <button class="btn btn-outline-primary" @onclick="DeleteAsync">Ecluir</button>
+        @if(_category.Id != 0)
+        {
+            <button class="btn btn-outline-primary" @onclick="UpsertAsync">Editar</button>
+        }
+        else
+        {
+            <button class="btn btn-outline-primary" @onclick="UpsertAsync">Cadastrar</button>
+
+        }
+
+        <button class="btn btn-outline-primary" @onclick="New">Novo</button>
+
+        @if(_category.Id != 0)
+        {
+            <button class="btn btn-outline-primary" @onclick="DeleteAsync">Ecluir</button>
+        }
     </div>
 </div>
 
@@ -118,5 +132,10 @@ else
         var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{_category?.Id}");
 
         await client.DeleteAsync(request);
+    }
+
+    private void New()
+    {
+        _category = new();
     }
 }
