@@ -1,14 +1,11 @@
 ﻿@page "/"
 @using BlazorWASM.Models
+@using RestSharp;
 
-@inject HttpClient Http
 
+<PageTitle>Categorias</PageTitle>
 
-<PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<h2>Categorias</h2>
 
 @if(_categories is null)
 {
@@ -43,7 +40,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.Delay(1000);
-        _categories = await Http.GetFromJsonAsync<List<Category>>("v1/categories"); 
+        var client = new RestClient();
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories");
+
+        _categories = await client.GetAsync<List<Category>?>(request);
     }
 }
