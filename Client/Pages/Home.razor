@@ -7,7 +7,7 @@
 
 <h2>Categorias</h2>
 
-@if(_categories is null)
+@if (_categories is null)
 {
     <p>Carregando dados da API</p>
 }
@@ -23,7 +23,7 @@ else
         </thead>
 
         <tbody>
-            @foreach(var category in _categories)
+            @foreach (var category in _categories)
             {
                 <tr>
                     <td>@category.Id</td>
@@ -35,8 +35,31 @@ else
     </table>
 }
 
+<hr />
+
+<div>
+    <div class="mb-3">
+        <p>Cadastro de categoria</p>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Título</label>
+        <input type="text" class="form-control" @bind="_category.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-control" @bind="_category.Description" />
+    </div>
+
+    <div class="mb-3">
+        <button class="btn btn-outline-primary" @onclick="PostAsync">Adicionar</button>
+    </div>
+</div>
+
 @code {
     private List<Category>? _categories = new();
+    private Category _category = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,5 +67,16 @@ else
         var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories");
 
         _categories = await client.GetAsync<List<Category>?>(request);
+    }
+
+    private async Task PostAsync()
+    {
+        var client = new RestClient();
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories")
+                            .AddJsonBody(_category);
+
+        var category = await client.PostAsync<Category>(request);
+
+        if (category is not null) _categories?.Add(category);
     }
 }
