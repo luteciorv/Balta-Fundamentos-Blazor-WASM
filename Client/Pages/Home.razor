@@ -1,7 +1,49 @@
 ﻿@page "/"
+@using BlazorWASM.Models
+
+@inject HttpClient Http
+
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+@if(_categories is null)
+{
+    <p>Carregando dados da API</p>
+}
+else
+{
+    <table class="table shadow table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <td>Título</td>
+                <td>Descrição</td>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach(var category in _categories)
+            {
+                <tr>
+                    <td>@category.Id</td>
+                    <td>@category.Title</td>
+                    <td>@category.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Category>? _categories = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(1000);
+        _categories = await Http.GetFromJsonAsync<List<Category>>("v1/categories"); 
+    }
+}
