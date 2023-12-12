@@ -58,6 +58,7 @@ else
 
     <div class="mb-3">
         <button class="btn btn-outline-primary" @onclick="UpsertAsync">Salvar</button>
+        <button class="btn btn-outline-primary" @onclick="DeleteAsync">Ecluir</button>
     </div>
 </div>
 
@@ -109,5 +110,13 @@ else
         var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{id}");
 
         _category = await client.GetAsync<Category?>(request);
+    }
+
+    private async Task DeleteAsync()
+    {
+        var client = new RestClient();
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{_category?.Id}");
+
+        await client.DeleteAsync(request);
     }
 }
