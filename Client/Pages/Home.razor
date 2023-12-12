@@ -19,6 +19,7 @@ else
                 <th>Id</th>
                 <td>Título</td>
                 <td>Descrição</td>
+                <td></td>
             </tr>
         </thead>
 
@@ -29,6 +30,7 @@ else
                     <td>@category.Id</td>
                     <td>@category.Title</td>
                     <td>@category.Description</td>
+                    <td><button class="btn btn-info" @onclick="() => GetAsync(category.Id)">Editar</button></td>
                 </tr>
             }
         </tbody>
@@ -39,8 +41,10 @@ else
 
 <div>
     <div class="mb-3">
-        <p>Cadastro de categoria</p>
+        <p>Dados da categoria</p>
     </div>
+
+    <input type="hidden" @bind="_category.Id" />
 
     <div class="mb-3">
         <label class="form-label">Título</label>
@@ -53,13 +57,13 @@ else
     </div>
 
     <div class="mb-3">
-        <button class="btn btn-outline-primary" @onclick="PostAsync">Adicionar</button>
+        <button class="btn btn-outline-primary" @onclick="UpsertAsync">Salvar</button>
     </div>
 </div>
 
 @code {
     private List<Category>? _categories = new();
-    private Category _category = new();
+    private Category? _category = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,14 +73,41 @@ else
         _categories = await client.GetAsync<List<Category>?>(request);
     }
 
-    private async Task PostAsync()
+    private async Task UpsertAsync()
     {
         var client = new RestClient();
-        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories")
-                            .AddJsonBody(_category);
 
-        var category = await client.PostAsync<Category>(request);
+        if(_category?.Id == 0)
+        {
+            var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories")
+                           .AddJsonBody(_category);
 
-        if (category is not null) _categories?.Add(category);
+            var category = await client.PostAsync<Category>(request);
+
+            if (category is not null) _categories?.Add(category);
+        }
+        else
+        {
+            var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{_category?.Id}")
+                           .AddJsonBody(_category);
+
+            await client.PutAsync<Category>(request);
+
+            var category = _categories?.FirstOrDefault(c => c.Id == _category?.Id);
+
+            if(category is not null)
+            {
+                category.Title = _category.Title;
+                category.Description = _category.Description;
+            }
+        }
+    }
+
+    private async Task GetAsync(int id)
+    {
+        var client = new RestClient();
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{id}");
+
+        _category = await client.GetAsync<Category?>(request);
     }
 }
