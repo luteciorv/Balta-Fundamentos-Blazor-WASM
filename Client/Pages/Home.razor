@@ -56,13 +56,20 @@ else
         <input type="text" class="form-control" @bind="_category.Description" />
     </div>
 
+    @if (_deleted)
+    {
+        <div class="alert alert-success" role="alert">
+            Categoria excluída com sucesso!
+        </div>
+    }
+
     <div class="mb-3">
-        @if(_category.Id == 0)
+        @if (_category.Id == 0)
         {
             <button class="btn btn-outline-primary" @onclick="New">Nova categoria</button>
         }
 
-        @if(_category.Id != 0)
+        @if (_category.Id != 0)
         {
             <button class="btn btn-outline-primary" @onclick="UpsertAsync">Editar</button>
         }
@@ -71,7 +78,7 @@ else
             <button class="btn btn-outline-primary" @onclick="UpsertAsync">Cadastrar</button>
         }
 
-        @if(_category.Id != 0)
+        @if (_category.Id != 0)
         {
             <button class="btn btn-outline-primary" @onclick="DeleteAsync">Ecluir</button>
         }
@@ -79,6 +86,8 @@ else
 </div>
 
 @code {
+    private bool _deleted;
+
     private List<Category>? _categories = new();
     private Category? _category = new();
 
@@ -88,13 +97,14 @@ else
         var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories");
 
         _categories = await client.GetAsync<List<Category>?>(request);
+        _deleted = false;
     }
 
     private async Task UpsertAsync()
     {
         var client = new RestClient();
 
-        if(_category?.Id == 0)
+        if (_category?.Id == 0)
         {
             var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories")
                            .AddJsonBody(_category);
@@ -113,12 +123,14 @@ else
 
             var category = _categories?.FirstOrDefault(c => c.Id == _category?.Id);
 
-            if(category is not null)
+            if (category is not null)
             {
                 category.Title = _category.Title;
                 category.Description = _category.Description;
             }
         }
+
+        _deleted = false;
     }
 
     private async Task GetAsync(int id)
@@ -127,6 +139,7 @@ else
         var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{id}");
 
         _category = await client.GetAsync<Category?>(request);
+        _deleted = false;
     }
 
     private async Task DeleteAsync()
@@ -135,10 +148,12 @@ else
         var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{_category?.Id}");
 
         await client.DeleteAsync(request);
+        _deleted = true;
     }
 
     private void New()
     {
         _category = new();
+        _deleted = false;
     }
 }
