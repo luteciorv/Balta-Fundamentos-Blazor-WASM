@@ -1,0 +1,180 @@
+﻿@page "/categories"
+
+@using BlazorWASM.Models
+@using RestSharp;
+
+@inject RestClient _client;
+
+<PageTitle>Categorias</PageTitle>
+
+<h2>Categorias</h2>
+
+@if (_categories.Count == 0)
+{
+    <p>Carregando as categorias</p>
+}
+else
+{
+    <table class="table shadow table-bordered">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <td>Título</td>
+                <td>Descrição</td>
+                <td></td>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var category in _categories)
+            {
+                <tr>
+                    <td>@category.Id</td>
+                    <td>@category.Title</td>
+                    <td>@category.Description</td>
+                    <td>
+                        <button class="btn btn-info" @onclick="() => GetAsync(category.Id)">Editar</button>
+                        <button class="btn btn-info" @onclick="() => DeleteAsync(category.Id)">Excluir</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+<div>
+    <div class="mb-3">
+        <p>Dados da categoria</p>
+    </div>
+
+    <input type="hidden" @bind="_category.Id" />
+
+    <div class="mb-3">
+        <label class="form-label">Título</label>
+        <input type="text" class="form-control" @bind="_category.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-control" @bind="_category.Description" />
+    </div>
+
+    @if (_deleted)
+    {
+        <div class="alert alert-success" role="alert">
+            Categoria excluída com sucesso!
+        </div>
+    }
+
+    @if (_unexpectedError != string.Empty)
+    {
+        <div class="alert alert-danger" role="alert">
+            Ocorreu um erro inesperado na ação: @_unexpectedError
+        </div>
+    }
+
+    <div class="mb-3">
+        @if (_category.Id == 0)
+        {
+            <button class="btn btn-outline-primary" @onclick="UpsertAsync">Cadastrar</button>
+        }
+        else
+        {
+            <button class="btn btn-outline-primary" @onclick="UpsertAsync">Salvar alterações</button>
+            <button class="btn btn-outline-primary" @onclick="NewCategory">Nova categoria</button>
+        }
+    </div>
+</div>
+
+@code {
+    private string _unexpectedError = string.Empty;
+    private bool _deleted;
+
+    private List<Category> _categories = new();
+    private Category _category = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories");
+
+        var categories = await _client.GetAsync<List<Category>>(request);
+        if (categories is not null) _categories = categories;
+
+        _deleted = false;
+    }
+
+    private async Task UpsertAsync()
+    {
+        if (_category.Id == 0)
+        {
+            var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories").AddJsonBody(_category);
+
+            var category = await _client.PostAsync<Category>(request);
+            if (category is null)
+            {
+                _unexpectedError = "Não foi possível criar a categoria";
+                return;
+            }
+
+            _categories.Add(category);
+            NewCategory();
+        }
+        else
+        {
+            var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{_category?.Id}")
+                           .AddJsonBody(_category!);
+
+            await _client.PutAsync<Category>(request);
+
+            var category = _categories.FirstOrDefault(c => c.Id == _category!.Id);
+            if (category is not null)
+            {
+                category.Title = _category!.Title;
+                category.Description = _category.Description;
+            }
+        }
+
+        _deleted = false;
+    }
+
+    private async Task GetAsync(int id)
+    {
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{id}");
+
+        var category = await _client.GetAsync<Category>(request);
+        if (category is null)
+        {
+            _unexpectedError = $"Nenhuma categoria com o id {id} foi encontrada";
+            return;
+        }
+
+        _category = category;
+        _deleted = false;
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        var category = _categories.FirstOrDefault(c => c.Id == id);
+        if (category is null)
+        {
+            _unexpectedError = $"Nenhuma categoria com o id {id} foi encontrada";
+            return;
+        }
+
+        var request = new RestRequest($"{Configuration.ApiUrl}/v1/categories/{id}");
+
+        _categories.Remove(category);
+        await _client.DeleteAsync(request);
+
+        _deleted = true;
+        NewCategory();
+    }
+
+    private void NewCategory()
+    {
+        _category = new();
+        _deleted = false;
+    }
+}
